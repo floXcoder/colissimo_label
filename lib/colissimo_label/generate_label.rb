@@ -109,7 +109,7 @@ class ColissimoLabel::GenerateLabel
     {
       "companyName": @addressee_data[:company_name], # Raison sociale
       "lastName": @addressee_data[:last_name], # Nom
-      "firstName": @addressee_data[:last_name], # Prénom
+      "firstName": @addressee_data[:first_name], # Prénom
       "line0": @addressee_data[:apartment], # Etage, couloir, escalier, appartement
       "line1": @addressee_data[:address_bis], # Entrée, bâtiment, immeuble, résidence
       "line2": @addressee_data[:address], # Numéro et libellé de voie
