@@ -86,7 +86,7 @@ parcel_number = ColissimoLabel::GenerateLabel.new(
           mobile:       'Mobile number of the addressee',
           email:        'Email of the addressee'
         }
-      ).call
+      ).perform
 ```
 
 For a foreign address (which required customs declaration):
@@ -127,7 +127,7 @@ parcel_number = ColissimoLabel::GenerateLabel.new(
             customs_code:  'hsCode' # Harmonized system code of your product
           }
         ]
-      ).call
+      ).perform
 ```
 
 In both cases, if the label cannot be generated it raises a StandardError with the reason. Otherwise, the parcel number is returned and files saved in the specified folders.
