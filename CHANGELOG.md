@@ -1,3 +1,7 @@
+## 0.4.0
+
+- Add `ColissimoLabel::FindRelayPoint` class to fetch available relay points around an address
+
 ## 0.3.0
 
 - Incorrect README method

@@ -3,6 +3,7 @@
 require 'active_support'
 
 require 'colissimo_label/version'
+require 'colissimo_label/find_relay_point'
 require 'colissimo_label/generate_label'
 
 module ColissimoLabel

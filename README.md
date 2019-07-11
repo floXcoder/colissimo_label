@@ -58,6 +58,55 @@ ColissimoLabel.colissimo_local_path = Rails.root.join('public', 'colissimo')
 
 ## Usage
 
+### Fetch relay points
+
+Colissimo webservices provides all relay points around an address.
+
+To get all available relay :
+
+```ruby
+ relay_points = ColissimoLabel::FindRelayPoint.new(
+         {
+           address:      'Address',
+           city:         'City',
+           postcode:     'Postcode',
+           country_code: 'Normalized country code (ex: FR)'
+         },
+         (Date.today + 5.days).strftime('%d/%m/%Y'), # Estimated departure date of the package
+         1000 # Computed weight of the package (in grams)
+       ).perform
+```
+
+It will return an array of relay points with the following data:
+
+```ruby
+{
+        :pickup_id,
+        :name,
+        :address,
+        :postcode,
+        :city,
+        :country,
+        :country_code,
+        :latitude,
+        :longitude,
+        :distance,
+        :max_weight,
+        :parking,
+        business_hours: {
+          :monday,
+          :tuesday,
+          :wednesday,
+          :thursday,
+          :friday,
+          :saturday,
+          :sunday
+        }
+      }
+```
+
+### Generate Colissimo label
+
 To generate a new Colissimo label, use the following methods.
 
 For a national address:
@@ -72,7 +121,7 @@ parcel_number = ColissimoLabel::GenerateLabel.new(
           address:      'Address',
           city:         'City',
           postcode:     'Postcode',
-          country_code: 'Normalized country code'
+          country_code: 'Normalized country code (ex: FR)'
         },
         {
           last_name:    'Last name of the addressee',
@@ -101,7 +150,7 @@ parcel_number = ColissimoLabel::GenerateLabel.new(
           address:      'Address',
           city:         'City',
           postcode:     'Postcode',
-          country_code: 'Normalized country code'
+          country_code: 'Normalized country code (ex: DE)'
         },
         {
           last_name:    'Last name of the addressee',
