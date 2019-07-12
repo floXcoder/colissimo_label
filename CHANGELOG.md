@@ -1,3 +1,7 @@
+## 0.5.0
+
+- Add option to generate label with a pickup location id
+
 ## 0.4.0
 
 - Add `ColissimoLabel::FindRelayPoint` class to fetch available relay points around an address

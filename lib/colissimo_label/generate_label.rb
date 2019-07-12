@@ -4,14 +4,16 @@ require 'http'
 
 class ColissimoLabel::GenerateLabel
 
-  def initialize(filename, destination_country, shipping_fees, sender_data, addressee_data, customs_total_weight = nil, customs_data = nil)
+  def initialize(filename, destination_country, shipping_fees, sender_data, addressee_data, options = {})
     @filename             = filename
     @destination_country  = destination_country
     @shipping_fees        = shipping_fees
     @sender_data          = sender_data
     @addressee_data       = addressee_data
-    @customs_total_weight = customs_total_weight
-    @customs_data         = customs_data
+    @pickup_id            = options.fetch(:pickup_id, nil)
+    @pickup_type          = options.fetch(:pickup_type, nil)
+    @customs_total_weight = options.fetch(:customs_total_weight, nil)
+    @customs_data         = options.fetch(:customs_data, nil)
     @errors               = []
   end
 
@@ -67,14 +69,16 @@ class ColissimoLabel::GenerateLabel
                       },
                       "letter":         {
                                           "service":   {
-                                            "productCode": product_code,
-                                            "depositDate": delivery_date.strftime('%F'),
-                                            "totalAmount": (@shipping_fees * 100).to_i,
+                                            "commercialName": @sender_data[:company_name],
+                                            "productCode":    product_code,
+                                            "depositDate":    delivery_date.strftime('%F'),
+                                            "totalAmount":    (@shipping_fees * 100).to_i,
                                             # "returnTypeChoice": '2' # Retour à la maison en prioritaire
                                           },
                                           "parcel":    {
-                                            "weight": format_weight
-                                          },
+                                                         "weight":           format_weight,
+                                                         "pickupLocationId": @pickup_id
+                                                       }.compact,
                                           "sender":    {
                                             "address": format_sender
                                           },
@@ -118,7 +122,7 @@ class ColissimoLabel::GenerateLabel
       "city": @addressee_data[:city], # Ville
       "zipCode": @addressee_data[:postcode], # Code postal
       "phoneNumber": @addressee_data[:phone], # Numéro de téléphone
-      "mobileNumber": @addressee_data[:mobile], # Numéro de portable
+      "mobileNumber": @addressee_data[:mobile], # Numéro de portable, obligatoire si pickup
       "doorCode1": @addressee_data[:door_code_1], # Code porte 1
       "doorCode2": @addressee_data[:door_code_2], # Code porte 2
       "email": @addressee_data[:email], # Adresse courriel
@@ -175,11 +179,17 @@ class ColissimoLabel::GenerateLabel
     %w[CH].include?(@destination_country)
   end
 
-  # DOM : Colissimo France et International sans signature / DOS : Colissimo France et International avec signature
   # Certains pays, comme l'Allemagne, requiert une signature pour la livraison
+  # DOM : Colissimo France et International sans signature
+  # DOS : Colissimo France et International avec signature
+  # Pays avec Point Relais : https://www.colissimo.entreprise.laposte.fr/fr/offre-europe
+  # BPR : Colissimo - Point Retrait – en Bureau de Poste
+  # A2P : Colissimo - Point Retrait – en relais Pickup ou en consigne Pickup Station
   def product_code
     if %w[DE IT GB LU].include?(@destination_country)
       'DOS'
+    elsif !@pickup_id.nil? && %w[FR].include?(@destination_country)
+      @pickup_type || 'BPR'
     else
       'DOM'
     end

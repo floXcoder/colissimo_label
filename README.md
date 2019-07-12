@@ -79,7 +79,7 @@ To get all available relay :
 
 It will return an array of relay points with the following data:
 
-```ruby
+```
 {
         :pickup_id,
         :name,
@@ -138,6 +138,37 @@ parcel_number = ColissimoLabel::GenerateLabel.new(
       ).perform
 ```
 
+For a national address and delivered to a relay point:
+
+```ruby
+parcel_number = ColissimoLabel::GenerateLabel.new(
+        'label_filename', # Name of the file generated
+        'FR', # Normalized country code of the destination
+        9.99, # Amount of the shipping fees (paid by the customer)
+        {
+          company_name: 'Sender company name',
+          address:      'Address',
+          city:         'City',
+          postcode:     'Postcode',
+          country_code: 'Normalized country code (ex: FR)'
+        },
+        {
+          last_name:    'Last name of the addressee',
+          first_name:   'First name of the addressee',
+          address_bis:  'Address bis of the addressee',
+          address:      'Address of the addressee',
+          city:         'City of the addressee',
+          postcode:     'Postcode of the addressee',
+          country_code: 'Normalized country code of the addressee',
+          phone:        'Phone number of the addressee',
+          mobile:       'Mobile number of the addressee',
+          email:        'Email of the addressee'
+        },
+        pickup_id:      'pickup ID',
+        pickup_type:    'BPR or A2P'
+      ).perform
+```
+
 For a foreign address (which required customs declaration):
 
 ```ruby
@@ -164,8 +195,8 @@ parcel_number = ColissimoLabel::GenerateLabel.new(
           mobile:       'Mobile number of the addressee',
           email:        'Email of the addressee'
         },
-        2, # Total weight of the package
-        [ # Details content of your package
+        customs_total_weight: 2, # Total weight of the package
+        customs_data: [ # Details content of your package
           {
             description:   'Product description',
             quantity:      1,

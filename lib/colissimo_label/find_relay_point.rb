@@ -28,6 +28,8 @@ class ColissimoLabel::FindRelayPoint
     root.xpath('//listePointRetraitAcheminement').map do |point|
       {
         pickup_id:      point.at_xpath('identifiant').text,
+        pickup_type:    point.at_xpath('typeDePoint
+ ').text,
         name:           point.at_xpath('nom').text,
         address:        [point.at_xpath('adresse1'), point.at_xpath('adresse2'), point.at_xpath('adresse3')].map(&:text).select(&:present?).join(' '),
         postcode:       point.at_xpath('codePostal').text,
