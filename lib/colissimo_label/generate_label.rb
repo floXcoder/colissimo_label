@@ -22,12 +22,13 @@ class ColissimoLabel::GenerateLabel
     status         = response.code
     parts          = response.to_a.last.force_encoding('BINARY').split('Content-ID: ')
     label_filename = @filename + '.pdf'
+    local_path = ColissimoLabel.colissimo_local_path.chomp('/') + '/' + label_filename
 
     if ColissimoLabel.s3_bucket
       colissimo_pdf = ColissimoLabel.s3_bucket.object(ColissimoLabel.s3_path.chomp('/') + '/' + label_filename)
       colissimo_pdf.put(acl: 'public-read', body: parts[2])
     else
-      File.open(ColissimoLabel.colissimo_local_path.chomp('/') + '/' + label_filename, 'wb') do |file|
+      File.open(local_path, 'wb') do |file|
         file.write(parts[2])
       end
     end
@@ -51,7 +52,7 @@ class ColissimoLabel::GenerateLabel
     else
       parcel_number = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"parcelNumber":"(.*?)",/).last.first
 
-      return [parcel_number, parts[2]]
+      return [parcel_number, local_path]
     end
   end
 
