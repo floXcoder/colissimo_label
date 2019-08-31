@@ -3,8 +3,7 @@
 require 'http'
 
 class ColissimoLabel::GenerateLabel
-
-  def initialize(filename, destination_country, shipping_fees, outputPrintingType = 'PDF_10x15_300dpi', sender_data, addressee_data, options = {})
+  def initialize(filename, destination_country, shipping_fees, outputPrintingType, sender_data, addressee_data, options = {})
     @filename             = filename
     @destination_country  = destination_country
     @shipping_fees        = shipping_fees
