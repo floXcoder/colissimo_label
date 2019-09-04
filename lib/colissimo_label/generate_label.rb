@@ -3,11 +3,13 @@
 require 'http'
 
 class ColissimoLabel::GenerateLabel
-  def initialize(filename, destination_country, shipping_fees, outputPrintingType, sender_data, addressee_data, options = {})
+  def initialize(filename, destination_country, shipping_fees, outputPrintingType, product_code, weight, sender_data, addressee_data, options = {})
     @filename             = filename
     @destination_country  = destination_country
     @shipping_fees        = shipping_fees
     @outputPrintingType   = outputPrintingType
+    @product_code         = product_code
+    @weight               = weight
     @sender_data          = sender_data
     @addressee_data       = addressee_data
     @pickup_id            = options.fetch(:pickup_id, nil)
@@ -71,13 +73,13 @@ class ColissimoLabel::GenerateLabel
                       "letter":         {
                                           "service":   {
                                             "commercialName": @sender_data[:company_name],
-                                            "productCode":    product_code,
+                                            "productCode":    @product_code,
                                             "depositDate":    delivery_date.strftime('%F'),
                                             "totalAmount":    (@shipping_fees * 100).to_i,
                                             # "returnTypeChoice": '2' # Retour à la maison en prioritaire
                                           },
                                           "parcel":    {
-                                                         "weight":           format_weight,
+                                                         "weight":           @weight,
                                                          "pickupLocationId": @pickup_id
                                                        }.compact,
                                           "sender":    {
@@ -133,11 +135,12 @@ class ColissimoLabel::GenerateLabel
 
   # weight: Colissimo weigh themselves all packages (so not relevant here)
   def format_weight
-    if require_customs?
-      @customs_total_weight
-    else
-      '0.1'
-    end
+
+    # if require_customs?
+    #   @customs_total_weight
+    # else
+    #   '0.1'
+    # end
   end
 
   # Déclaration douanière de type CN23
@@ -186,14 +189,14 @@ class ColissimoLabel::GenerateLabel
   # Pays avec Point Relais : https://www.colissimo.entreprise.laposte.fr/fr/offre-europe
   # BPR : Colissimo - Point Retrait – en Bureau de Poste
   # A2P : Colissimo - Point Retrait – en relais Pickup ou en consigne Pickup Station
-  def product_code
-    if %w[DE IT GB LU].include?(@destination_country)
-      'DOS'
-    elsif !@pickup_id.nil? && %w[FR].include?(@destination_country)
-      @pickup_type || 'BPR'
-    else
-      'DOM'
-    end
-  end
+  # def product_code
+  #   if %w[DE IT GB LU].include?(@destination_country)
+  #     'DOS'
+  #   elsif !@pickup_id.nil? && %w[FR].include?(@destination_country)
+  #     @pickup_type || 'BPR'
+  #   else
+  #     'DOM'
+  #   end
+  # end
 
 end
