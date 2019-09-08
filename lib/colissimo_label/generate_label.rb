@@ -3,13 +3,14 @@
 require 'http'
 
 class ColissimoLabel::GenerateLabel
-  def initialize(filename, destination_country, shipping_fees, outputPrintingType, product_code, weight, sender_data, addressee_data, options = {})
+  def initialize(filename, destination_country, shipping_fees, outputPrintingType, product_code, weight, insurance_value, sender_data, addressee_data, options = {})
     @filename             = filename
     @destination_country  = destination_country
     @shipping_fees        = shipping_fees
     @outputPrintingType   = outputPrintingType
     @product_code         = product_code
     @weight               = weight
+    @insurance_value      = insurance_value || "0"
     @sender_data          = sender_data
     @addressee_data       = addressee_data
     @pickup_id            = options.fetch(:pickup_id, nil)
@@ -80,7 +81,8 @@ class ColissimoLabel::GenerateLabel
                                           },
                                           "parcel":    {
                                                          "weight":           @weight,
-                                                         "pickupLocationId": @pickup_id
+                                                         "pickupLocationId": @pickup_id,
+                                                         "insuranceValue";   @insurance_value
                                                        }.compact,
                                           "sender":    {
                                             "address": format_sender
