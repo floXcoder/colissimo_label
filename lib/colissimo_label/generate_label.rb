@@ -82,7 +82,7 @@ class ColissimoLabel::GenerateLabel
                                           "parcel":    {
                                                          "weight":           @weight,
                                                          "pickupLocationId": @pickup_id,
-                                                         "insuranceValue";   @insurance_value
+                                                         "insuranceValue":   @insurance_value
                                                        }.compact,
                                           "sender":    {
                                             "address": format_sender
