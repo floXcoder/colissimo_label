@@ -22,9 +22,10 @@ class ColissimoLabel::GenerateLabel
 
   def perform
     response       = perform_request
+    byebug
     status         = response.code
     parts          = response.to_a.last.force_encoding('BINARY').split('Content-ID: ')
-    label_filename = @filename + '.pdf'
+    label_filename = @filename
     local_path = ColissimoLabel.colissimo_local_path.chomp('/') + '/' + label_filename
 
     if ColissimoLabel.s3_bucket
