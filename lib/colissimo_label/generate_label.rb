@@ -22,10 +22,9 @@ class ColissimoLabel::GenerateLabel
 
   def perform
     response       = perform_request
-    byebug
     status         = response.code
     parts          = response.to_a.last.force_encoding('BINARY').split('Content-ID: ')
-    label_filename = @filename + '.zpl'
+    label_filename = @filename + '.' + file_format
     local_path = ColissimoLabel.colissimo_local_path.chomp('/') + '/' + label_filename
 
     if ColissimoLabel.s3_bucket
@@ -61,6 +60,12 @@ class ColissimoLabel::GenerateLabel
   end
 
   private
+
+  def file_format
+    return 'pdf' if @outputPrintingType == 'PDF_A4_300dpi' || @outputPrintingType == 'PDF_10x15_300dpi'
+    return 'zpl' if @outputPrintingType == 'ZPL_10x15_300dpi' || @outputPrintingType == 'ZPL_10x15_203dpi'
+    return 'dpl' if @outputPrintingType == 'DPL_10x15_300dpi' || @outputPrintingType == 'DPL_10x15_203dpi'
+  end
 
   def perform_request(delivery_date = Date.today)
     HTTP.post(service_url,
