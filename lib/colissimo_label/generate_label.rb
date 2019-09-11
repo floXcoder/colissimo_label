@@ -3,20 +3,21 @@
 require 'http'
 
 class ColissimoLabel::GenerateLabel
-  def initialize(filename, destination_country, shipping_fees, outputPrintingType, product_code, weight, insurance_value, sender_data, addressee_data, options = {})
+  def initialize(filename, destination_country, shipping_fees, sender_data, addressee_data, options = {})
     @filename             = filename
     @destination_country  = destination_country
     @shipping_fees        = shipping_fees
-    @outputPrintingType   = outputPrintingType
-    @product_code         = product_code
-    @weight               = weight
-    @insurance_value      = insurance_value || "0"
+    @outputPrintingType   = options.fetch(:label_type, nil)
+    @product_code         = options.fetch(:product_code, nil)
+    @weight               = options.fetch(:weight, nil)
+    @insurance_value      = options.fetch(:insurance_value, nil) || "0"
+    @order_id               = options.fetch(:order_id, nil)
     @sender_data          = sender_data
     @addressee_data       = addressee_data
     @pickup_id            = options.fetch(:pickup_id, nil)
     @pickup_type          = options.fetch(:pickup_type, nil)
     @customs_total_weight = options.fetch(:customs_total_weight, nil)
-    @customs_data         = options.fetch(:customs_data, nil)
+    @cn23_data         = options.fetch(:cn23_data, nil)
     @errors               = []
   end
 
@@ -96,7 +97,7 @@ class ColissimoLabel::GenerateLabel
                                           "addressee": {
                                             "address": format_addressee
                                           }
-                                        }.merge(customs)
+                                        }.merge(cn23_declaration)
                     }.compact)
   end
 
@@ -152,21 +153,21 @@ class ColissimoLabel::GenerateLabel
   end
 
   # Déclaration douanière de type CN23
-  def customs
+  def cn23_declaration
     if require_customs?
       {
         "customsDeclarations": {
           "includeCustomsDeclarations": 1, # Inclure déclaration
           "contents": {
-            "article":  @customs_data.map { |customs|
+            "article":  @cn23_data["products"].map { |product|
               {
-                "description":   customs[:description],
-                "quantity":      customs[:quantity],
-                "weight":        customs[:weight],
-                "value":         customs[:item_price],
-                "originCountry": customs[:country_code],
-                "currency":      customs[:currency_code],
-                "hsCode":        customs[:customs_code] # Objets d'art, de collection ou d'antiquité (https://pro.douane.gouv.fr/prodouane.asp)
+                "description":   product[:description],
+                "quantity":      product[:quantity],
+                "weight":        product[:weight],
+                "value":         product[:unit_price],
+                "originCountry": product[:country_code],
+                "currency":      product[:currency_code],
+                "hsCode":        product[:hs_code] # Objets d'art, de collection ou d'antiquité (https://pro.douane.gouv.fr/prodouane.asp)
               }
             },
             "category": {
@@ -177,7 +178,7 @@ class ColissimoLabel::GenerateLabel
               # 4 => Document
               # 5 => Autre
               # 6 => Retour de marchandise
-              "value": 3
+              "value": @cn23_data[:category]
             }
           }
         }
@@ -188,7 +189,7 @@ class ColissimoLabel::GenerateLabel
   end
 
   def require_customs?
-    %w[CH].include?(@destination_country)
+    @cn23_data["products"] && @cn23_data["products"].length > 0
   end
 
   # Certains pays, comme l'Allemagne, requiert une signature pour la livraison
