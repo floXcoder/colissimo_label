@@ -189,7 +189,7 @@ class ColissimoLabel::GenerateLabel
   end
 
   def require_customs?
-    @cn23_data["products"] && @cn23_data["products"].length > 0
+    @cn23_data && @cn23_data["products"] && @cn23_data["products"].length > 0
   end
 
   # Certains pays, comme l'Allemagne, requiert une signature pour la livraison
