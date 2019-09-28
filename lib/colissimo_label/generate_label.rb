@@ -37,9 +37,9 @@ class ColissimoLabel::GenerateLabel
       colissimo_pdf = ColissimoLabel.s3_bucket.object(ColissimoLabel.s3_path.chomp('/') + '/' + label_filename)
       colissimo_pdf.put(acl: 'public-read', body: parts[2])
     else
-      some_path = Pathname(local_path)
+      some_path = Pathname(label_path)
       some_path.dirname.mkpath
-      File.open(local_path, 'wb') do |file|
+      File.open(label_path, 'wb') do |file|
         file.write(parts[2])
       end
     end
@@ -52,9 +52,9 @@ class ColissimoLabel::GenerateLabel
         customs_pdf = ColissimoLabel.s3_bucket.object(ColissimoLabel.s3_path.chomp('/') + '/' + customs_filename)
         customs_pdf.put(acl: 'public-read', body: parts[3])
       else
-        some_path = Pathname(ColissimoLabel.colissimo_local_path.chomp('/') + '/' + cn23_filename)
+        some_path = Pathname(cn23_path)
         some_path.dirname.mkpath
-        File.open(ColissimoLabel.colissimo_local_path.chomp('/') + '/' + cn23_filename, 'wb') do |file|
+        File.open(cn23_path, 'wb') do |file|
           file.write(parts[3])
         end
       end
