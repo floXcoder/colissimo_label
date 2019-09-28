@@ -177,7 +177,7 @@ class ColissimoLabel::GenerateLabel
                 "value":         product[:unit_price].to_f.round(2),
                 "originCountry": product[:country_code],
                 "currency":      product[:currency_code],
-                "hsCode":        product[:hs_code].to_i # Objets d'art, de collection ou d'antiquité (https://pro.douane.gouv.fr/prodouane.asp)
+                "hsCode":        product[:hs_code] ? product[:hs_code].to_i : "" # Objets d'art, de collection ou d'antiquité (https://pro.douane.gouv.fr/prodouane.asp)
               }
             },
             "category": {
