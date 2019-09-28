@@ -11,13 +11,13 @@ class ColissimoLabel::GenerateLabel
     @product_code         = options.fetch(:product_code, nil)
     @weight               = options.fetch(:weight, nil)
     @insurance_value      = options.fetch(:insurance_value, nil) || "0"
-    @order_id               = options.fetch(:order_id, nil)
+    @order_id             = options.fetch(:order_id, nil)
     @sender_data          = sender_data
     @addressee_data       = addressee_data
     @pickup_id            = options.fetch(:pickup_id, nil)
     @pickup_type          = options.fetch(:pickup_type, nil)
     @customs_total_weight = options.fetch(:customs_total_weight, nil)
-    @cn23_data         = options.fetch(:cn23_data, nil)
+    @cn23_data            = options.fetch(:cn23_data, nil)
     @errors               = []
   end
 
@@ -26,7 +26,9 @@ class ColissimoLabel::GenerateLabel
     status         = response.code
     parts          = response.to_a.last.force_encoding('BINARY').split('Content-ID: ')
     label_filename = @filename + '.' + file_format
-    local_path = ColissimoLabel.colissimo_local_path.chomp('/') + '/' + label_filename
+    local_path = ColissimoLabel.colissimo_local_path.chomp('/') + '/'
+    label_path = local_path + 'labels/' + label_filename
+    cn23_path = nil
 
     if ColissimoLabel.s3_bucket
       colissimo_pdf = ColissimoLabel.s3_bucket.object(ColissimoLabel.s3_path.chomp('/') + '/' + label_filename)
@@ -38,13 +40,14 @@ class ColissimoLabel::GenerateLabel
     end
 
     if require_customs?
-      customs_filename = @filename + '-customs.pdf'
+      cn23_filename = @filename + '_cn23.pdf'
+      cn23_path = local_path + 'cn23/' + cn23_filename
 
       if ColissimoLabel.s3_bucket
         customs_pdf = ColissimoLabel.s3_bucket.object(ColissimoLabel.s3_path.chomp('/') + '/' + customs_filename)
         customs_pdf.put(acl: 'public-read', body: parts[3])
       else
-        File.open(ColissimoLabel.colissimo_local_path.chomp('/') + '/' + customs_filename, 'wb') do |file|
+        File.open(ColissimoLabel.colissimo_local_path.chomp('/') + '/' + cn23_filename, 'wb') do |file|
           file.write(parts[3])
         end
       end
@@ -56,7 +59,7 @@ class ColissimoLabel::GenerateLabel
     else
       parcel_number = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"parcelNumber":"(.*?)",/).last.first
 
-      return [parcel_number, local_path]
+      return [parcel_number, local_path, cn23_path]
     end
   end
 
@@ -162,12 +165,12 @@ class ColissimoLabel::GenerateLabel
             "article":  @cn23_data["products"].map { |product|
               {
                 "description":   product[:description],
-                "quantity":      product[:quantity],
-                "weight":        product[:weight],
-                "value":         product[:unit_price],
+                "quantity":      product[:quantity].to_i,
+                "weight":        product[:weight].to_i,
+                "value":         product[:unit_price].to_f.round(2),
                 "originCountry": product[:country_code],
                 "currency":      product[:currency_code],
-                "hsCode":        product[:hs_code] # Objets d'art, de collection ou d'antiquité (https://pro.douane.gouv.fr/prodouane.asp)
+                "hsCode":        product[:hs_code].to_i # Objets d'art, de collection ou d'antiquité (https://pro.douane.gouv.fr/prodouane.asp)
               }
             },
             "category": {
