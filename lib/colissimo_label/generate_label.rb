@@ -181,7 +181,7 @@ class ColissimoLabel::GenerateLabel
               {
                 "description":   product[:description],
                 "quantity":      product[:quantity].to_i,
-                "weight":        product[:weight].to_i,
+                "weight":        product[:weight].to_f.round(2),
                 "value":         product[:unit_price].to_f.round(2),
                 "originCountry": product[:country_code],
                 "currency":      product[:currency_code]
