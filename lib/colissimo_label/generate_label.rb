@@ -66,7 +66,7 @@ class ColissimoLabel::GenerateLabel
     else
       parcel_number = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"parcelNumber":"(.*?)",/).last.first
 
-      return [parcel_number, local_path, cn23_path]
+      return [parcel_number, label_path, cn23_path]
     end
   end
 
