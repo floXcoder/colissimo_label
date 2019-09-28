@@ -162,6 +162,14 @@ class ColissimoLabel::GenerateLabel
     # end
   end
 
+  # Objets d'art, de collection ou d'antiquité (https://pro.douane.gouv.fr/prodouane.asp)
+  def hs_code(product)
+    return {} if product[:hs_code].blank?
+    {
+      "hsCode": product[:hs_code].to_i
+    }
+  end
+
   # Déclaration douanière de type CN23
   def cn23_declaration
     if require_customs?
@@ -176,9 +184,8 @@ class ColissimoLabel::GenerateLabel
                 "weight":        product[:weight].to_i,
                 "value":         product[:unit_price].to_f.round(2),
                 "originCountry": product[:country_code],
-                "currency":      product[:currency_code],
-                "hsCode":        product[:hs_code] ? product[:hs_code].to_i : "" # Objets d'art, de collection ou d'antiquité (https://pro.douane.gouv.fr/prodouane.asp)
-              }
+                "currency":      product[:currency_code]
+              }.merge(hs_code(product))
             },
             "category": {
               # Nature de l'envoi
