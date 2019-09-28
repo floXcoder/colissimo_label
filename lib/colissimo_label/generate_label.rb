@@ -3,6 +3,8 @@
 require 'http'
 
 class ColissimoLabel::GenerateLabel
+  require 'pathname'
+
   def initialize(filename, destination_country, shipping_fees, sender_data, addressee_data, options = {})
     @filename             = filename
     @destination_country  = destination_country
@@ -35,6 +37,8 @@ class ColissimoLabel::GenerateLabel
       colissimo_pdf = ColissimoLabel.s3_bucket.object(ColissimoLabel.s3_path.chomp('/') + '/' + label_filename)
       colissimo_pdf.put(acl: 'public-read', body: parts[2])
     else
+      some_path = Pathname(local_path)
+      some_path.dirname.mkpath
       File.open(local_path, 'wb') do |file|
         file.write(parts[2])
       end
@@ -48,6 +52,8 @@ class ColissimoLabel::GenerateLabel
         customs_pdf = ColissimoLabel.s3_bucket.object(ColissimoLabel.s3_path.chomp('/') + '/' + customs_filename)
         customs_pdf.put(acl: 'public-read', body: parts[3])
       else
+        some_path = Pathname(ColissimoLabel.colissimo_local_path.chomp('/') + '/' + cn23_filename)
+        some_path.dirname.mkpath
         File.open(ColissimoLabel.colissimo_local_path.chomp('/') + '/' + cn23_filename, 'wb') do |file|
           file.write(parts[3])
         end
