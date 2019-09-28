@@ -22,6 +22,7 @@ class ColissimoLabel::GenerateLabel
   end
 
   def perform
+    byebug
     response       = perform_request
     status         = response.code
     parts          = response.to_a.last.force_encoding('BINARY').split('Content-ID: ')
@@ -181,7 +182,7 @@ class ColissimoLabel::GenerateLabel
               # 4 => Document
               # 5 => Autre
               # 6 => Retour de marchandise
-              "value": @cn23_data[:category]
+              "value": @cn23_data[:category].to_i
             }
           }
         }
