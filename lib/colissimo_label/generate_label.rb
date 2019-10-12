@@ -24,7 +24,6 @@ class ColissimoLabel::GenerateLabel
   end
 
   def perform
-    byebug
     response       = perform_request
     status         = response.code
     parts          = response.to_a.last.force_encoding('BINARY').split('Content-ID: ')
@@ -124,6 +123,8 @@ class ColissimoLabel::GenerateLabel
   def format_sender
     {
       "companyName": @sender_data[:company_name],
+      "lastName":    @sender_data[:last_name],
+      "firstName":   @sender_data[:first_name],
       "line2":       @sender_data[:address],
       "city":        @sender_data[:city],
       "zipCode":     @sender_data[:postcode],
