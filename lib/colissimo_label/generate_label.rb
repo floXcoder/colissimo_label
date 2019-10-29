@@ -77,6 +77,21 @@ class ColissimoLabel::GenerateLabel
     return 'dpl' if @outputPrintingType == 'DPL_10x15_300dpi' || @outputPrintingType == 'DPL_10x15_203dpi'
   end
 
+  def getProductInter
+    url = "https://ws.colissimo.fr/sls-ws/SlsServiceWSRest/2.0/getProductInter"
+    HTTP.post(url,
+      {
+        json: {
+          "contractNumber": ColissimoLabel.contract_number,
+          "password": ColissimoLabel.contract_password,
+          productCode: 'COLI',
+          countryCode: 'US',
+          zipCode: '99501'
+        }
+      }
+    )
+  end
+
   def perform_request(delivery_date = Date.today)
     HTTP.post(service_url,
               json: {
@@ -93,7 +108,7 @@ class ColissimoLabel::GenerateLabel
                                             "productCode":    @product_code,
                                             "depositDate":    delivery_date.strftime('%F'),
                                             "totalAmount":    (@shipping_fees * 100).to_i,
-                                            # "returnTypeChoice": '2' # Retour à la maison en prioritaire
+                                            "returnTypeChoice": '2' # Retour à la maison en prioritaire
                                           },
                                           "parcel":    {
                                                          "weight":           @weight,
