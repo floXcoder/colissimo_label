@@ -1,3 +1,7 @@
+## 0.6.0
+
+- Update for Rails 6
+
 ## 0.5.0
 
 - Add option to generate label with a pickup location id
