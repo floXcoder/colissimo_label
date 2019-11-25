@@ -1,3 +1,7 @@
+## 0.8.0
+
+- Add Spain to mandatory signature countries
+
 ## 0.7.0
 
 - Ensure message response is present
