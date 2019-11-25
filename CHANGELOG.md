@@ -1,3 +1,7 @@
+## 0.7.0
+
+- Ensure message response is present
+
 ## 0.6.0
 
 - Update for Rails 6

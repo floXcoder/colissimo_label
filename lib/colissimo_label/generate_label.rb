@@ -46,12 +46,17 @@ class ColissimoLabel::GenerateLabel
     end
 
     if status == 400
-      error_message = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"messageContent":"(.*?)"/).last.first
+      error_message = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"messageContent":"(.*?)"/).last&.first
       raise StandardError, error_message
     else
-      parcel_number = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"parcelNumber":"(.*?)",/).last.first
+      if (response_message = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"parcelNumber":"(.*?)",/).last)
+        parcel_number = response_message.first
 
-      return parcel_number
+        return parcel_number
+      else
+        error_message = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"messageContent":"(.*?)"/).last&.first
+        raise StandardError, error_message
+      end
     end
   end
 
