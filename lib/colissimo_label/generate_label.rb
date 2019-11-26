@@ -191,7 +191,7 @@ class ColissimoLabel::GenerateLabel
   # BPR : Colissimo - Point Retrait – en Bureau de Poste
   # A2P : Colissimo - Point Retrait – en relais Pickup ou en consigne Pickup Station
   def product_code
-    if %w[DE IT ES GB LU].include?(@destination_country)
+    if %w[DE IT ES GB LU NL].include?(@destination_country)
       'DOS'
     elsif !@pickup_id.nil? && %w[FR].include?(@destination_country)
       @pickup_type || 'BPR'
