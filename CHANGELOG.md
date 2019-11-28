@@ -1,3 +1,7 @@
+## 0.10.0
+
+- Add Denmark to mandatory signature countries
+
 ## 0.9.0
 
 - Add Netherlands to mandatory signature countries
