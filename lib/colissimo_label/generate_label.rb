@@ -14,6 +14,7 @@ class ColissimoLabel::GenerateLabel
     @pickup_type          = options.fetch(:pickup_type, nil)
     @customs_total_weight = options.fetch(:customs_total_weight, nil)
     @customs_data         = options.fetch(:customs_data, nil)
+    @with_signature       = options.fetch(:with_signature, false)
     @errors               = []
   end
 
@@ -195,6 +196,8 @@ class ColissimoLabel::GenerateLabel
       'DOS'
     elsif !@pickup_id.nil? && %w[FR].include?(@destination_country)
       @pickup_type || 'BPR'
+    elsif @with_signature
+      'DOS'
     else
       'DOM'
     end

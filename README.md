@@ -138,6 +138,12 @@ parcel_number = ColissimoLabel::GenerateLabel.new(
       ).perform
 ```
 
+You can add the following option to require the signature:
+
+```
+with_signature: true
+```
+
 For a national address and delivered to a relay point:
 
 ```ruby

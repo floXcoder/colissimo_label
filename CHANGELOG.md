@@ -1,3 +1,7 @@
+## 0.11.0
+
+- Add option to generate label with signature
+
 ## 0.10.0
 
 - Add Denmark to mandatory signature countries
