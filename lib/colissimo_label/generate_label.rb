@@ -3,6 +3,7 @@
 require 'http'
 
 class ColissimoLabel::GenerateLabel
+  class ServiceUnavailable < StandardError; end
   require 'pathname'
 
   def initialize(filename, destination_country, shipping_fees, sender_data, addressee_data, options = {})
@@ -63,7 +64,7 @@ class ColissimoLabel::GenerateLabel
       error_message = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"messageContent":"(.*?)"/).last.first
       raise StandardError, error_message
     elsif status == 503
-      raise StandardError, { message: 'Laposte: Service Unavailable', code: 503}.to_json
+      raise ServiceUnavailable, { message: 'Laposte: Service Unavailable', code: 503}.to_json
     else
       parcel_number = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"parcelNumber":"(.*?)",/).last.first
 
