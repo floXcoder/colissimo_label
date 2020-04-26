@@ -58,6 +58,7 @@ class ColissimoLabel::GenerateLabel
         end
       end
     end
+    byebug
 
     if status == 400
       error_message = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"messageContent":"(.*?)"/).last.first
