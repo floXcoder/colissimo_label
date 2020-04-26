@@ -58,13 +58,12 @@ class ColissimoLabel::GenerateLabel
         end
       end
     end
-    byebug
 
     if status == 400
       error_message = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"messageContent":"(.*?)"/).last.first
       raise StandardError, error_message
     elsif status == 503
-      raise StandardError, 'Laposte: 503 Service Unavailable'
+      raise StandardError, { message: 'Laposte: Service Unavailable', code: 503}.to_json
     else
       parcel_number = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"parcelNumber":"(.*?)",/).last.first
 
