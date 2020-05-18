@@ -1,3 +1,7 @@
+## 0.12.0
+
+- Add Austria to mandatory signature countries
+
 ## 0.11.0
 
 - Add option to generate label with signature
