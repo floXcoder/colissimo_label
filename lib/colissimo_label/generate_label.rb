@@ -96,7 +96,6 @@ class ColissimoLabel::GenerateLabel
   end
 
   def perform_request(delivery_date = Date.today)
-    byebug
     HTTP.post(service_url,
               json: {
                       "contractNumber": ColissimoLabel.contract_number,
