@@ -26,7 +26,7 @@ class ColissimoLabel::GenerateLabel
     status         = response.code
     parts          = response.to_a.last.force_encoding('BINARY').split('Content-ID: ')
     label_filename = @filename + '.' + file_format
-    local_path     = ColissimoLabel.colissimo_local_path.chomp('/')
+    local_path     = ColissimoLabel.colissimo_local_path&.chomp('/')
 
     if ColissimoLabel.s3_bucket
       colissimo_pdf = ColissimoLabel.s3_bucket.object(ColissimoLabel.s3_path.chomp('/') + '/' + label_filename)

@@ -1,3 +1,7 @@
+## 0.14.0
+
+- Ensure local path is present
+
 ## 0.13.0
 
 - Multiple improvements
