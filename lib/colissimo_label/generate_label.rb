@@ -16,7 +16,7 @@ class ColissimoLabel::GenerateLabel
     @customs_total_weight = options.fetch(:customs_total_weight, nil)
     @customs_data         = options.fetch(:customs_data, nil)
     @with_signature       = options.fetch(:with_signature, false)
-    @insurance_value      = options.fetch(:insurance_value, false)
+    @insurance_value      = options.fetch(:insurance_value, nil)
     @label_output_format  = options.fetch(:label_output_format, 'PDF_10x15_300dpi')
     @errors               = []
   end
@@ -90,7 +90,7 @@ class ColissimoLabel::GenerateLabel
                                           "parcel":    {
                                                          "weight":           format_weight,
                                                          "pickupLocationId": @pickup_id,
-                                                         # "insuranceValue":   @insurance_value
+                                                         "insuranceValue":   @insurance_value
                                                        }.compact,
                                           "sender":    {
                                             "address": format_sender

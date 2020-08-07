@@ -1,3 +1,7 @@
+## 0.16.0
+
+- Use correct default value for insurance
+
 ## 0.15.0
 
 - Comment insurance value
