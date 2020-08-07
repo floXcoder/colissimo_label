@@ -50,7 +50,7 @@ class ColissimoLabel::GenerateLabel
       end
     end
 
-    if status == 400
+    if status == 400 || status == 500
       error_message = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"messageContent":"(.*?)"/).last&.first
       raise StandardError, error_message
     elsif status == 503
@@ -90,7 +90,7 @@ class ColissimoLabel::GenerateLabel
                                           "parcel":    {
                                                          "weight":           format_weight,
                                                          "pickupLocationId": @pickup_id,
-                                                         "insuranceValue":   @insurance_value
+                                                         # "insuranceValue":   @insurance_value
                                                        }.compact,
                                           "sender":    {
                                             "address": format_sender

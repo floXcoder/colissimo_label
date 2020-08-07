@@ -1,3 +1,7 @@
+## 0.15.0
+
+- Comment insurance value
+
 ## 0.14.0
 
 - Ensure local path is present
