@@ -12,9 +12,12 @@ class ColissimoLabel::GenerateLabel
     @addressee_data       = addressee_data
     @pickup_id            = options.fetch(:pickup_id, nil)
     @pickup_type          = options.fetch(:pickup_type, nil)
+    @total_weight         = options.fetch(:total_weight, nil)
     @customs_total_weight = options.fetch(:customs_total_weight, nil)
     @customs_data         = options.fetch(:customs_data, nil)
     @with_signature       = options.fetch(:with_signature, false)
+    @insurance_value      = options.fetch(:insurance_value, false)
+    @label_output_format  = options.fetch(:label_output_format, 'PDF_10x15_300dpi')
     @errors               = []
   end
 
@@ -22,13 +25,14 @@ class ColissimoLabel::GenerateLabel
     response       = perform_request
     status         = response.code
     parts          = response.to_a.last.force_encoding('BINARY').split('Content-ID: ')
-    label_filename = @filename + '.pdf'
+    label_filename = @filename + '.' + file_format
+    local_path     = ColissimoLabel.colissimo_local_path.chomp('/')
 
     if ColissimoLabel.s3_bucket
       colissimo_pdf = ColissimoLabel.s3_bucket.object(ColissimoLabel.s3_path.chomp('/') + '/' + label_filename)
       colissimo_pdf.put(acl: 'public-read', body: parts[2])
     else
-      File.open(ColissimoLabel.colissimo_local_path.chomp('/') + '/' + label_filename, 'wb') do |file|
+      File.open(local_path + '/' + label_filename, 'wb') do |file|
         file.write(parts[2])
       end
     end
@@ -40,7 +44,7 @@ class ColissimoLabel::GenerateLabel
         customs_pdf = ColissimoLabel.s3_bucket.object(ColissimoLabel.s3_path.chomp('/') + '/' + customs_filename)
         customs_pdf.put(acl: 'public-read', body: parts[3])
       else
-        File.open(ColissimoLabel.colissimo_local_path.chomp('/') + '/' + customs_filename, 'wb') do |file|
+        File.open(local_path + '/' + customs_filename, 'wb') do |file|
           file.write(parts[3])
         end
       end
@@ -49,6 +53,8 @@ class ColissimoLabel::GenerateLabel
     if status == 400
       error_message = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"messageContent":"(.*?)"/).last&.first
       raise StandardError, error_message
+    elsif status == 503
+      raise StandardError, { message: 'Colissimo: Service Unavailable' }
     else
       if (response_message = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"parcelNumber":"(.*?)",/).last)
         parcel_number = response_message.first
@@ -71,7 +77,7 @@ class ColissimoLabel::GenerateLabel
                       "outputFormat":   {
                         "x":                  '0',
                         "y":                  '0',
-                        "outputPrintingType": 'PDF_10x15_300dpi'
+                        "outputPrintingType": @label_output_format
                       },
                       "letter":         {
                                           "service":   {
@@ -83,7 +89,8 @@ class ColissimoLabel::GenerateLabel
                                           },
                                           "parcel":    {
                                                          "weight":           format_weight,
-                                                         "pickupLocationId": @pickup_id
+                                                         "pickupLocationId": @pickup_id,
+                                                         "insuranceValue":   @insurance_value
                                                        }.compact,
                                           "sender":    {
                                             "address": format_sender
@@ -105,14 +112,29 @@ class ColissimoLabel::GenerateLabel
     "https://ws.colissimo.fr/sls-ws/SlsServiceWSRest/2.0/#{service}"
   end
 
+  def file_format
+    case @label_output_format
+    when 'PDF_A4_300dpi', 'PDF_10x15_300dpi'
+      'pdf'
+    when 'ZPL_10x15_300dpi', 'ZPL_10x15_203dpi'
+      'zpl'
+    when 'DPL_10x15_300dpi', 'DPL_10x15_203dpi'
+      'dpl'
+    else
+      'pdf'
+    end
+  end
+
   def format_sender
     {
       "companyName": @sender_data[:company_name],
+      "lastName":    @sender_data[:last_name],
+      "firstName":   @sender_data[:first_name],
       "line2":       @sender_data[:address],
       "city":        @sender_data[:city],
       "zipCode":     @sender_data[:postcode],
       "countryCode": @sender_data[:country_code]
-    }
+    }.compact.transform_values(&:strip)
   end
 
   def format_addressee
@@ -141,7 +163,7 @@ class ColissimoLabel::GenerateLabel
     if require_customs?
       @customs_total_weight
     else
-      '0.1'
+      @total_weight ? @total_weight : '0.1'
     end
   end
 
@@ -155,9 +177,9 @@ class ColissimoLabel::GenerateLabel
             "article":  @customs_data.map { |customs|
               {
                 "description":   customs[:description],
-                "quantity":      customs[:quantity],
-                "weight":        customs[:weight],
-                "value":         customs[:item_price],
+                "quantity":      customs[:quantity]&.to_i,
+                "weight":        customs[:weight]&.to_f.round(2),
+                "value":         customs[:item_price]&.to_f.round(2),
                 "originCountry": customs[:country_code],
                 "currency":      customs[:currency_code],
                 "hsCode":        customs[:customs_code] # Objets d'art, de collection ou d'antiquité (https://pro.douane.gouv.fr/prodouane.asp)
@@ -182,7 +204,7 @@ class ColissimoLabel::GenerateLabel
   end
 
   def require_customs?
-    %w[CH].include?(@destination_country)
+    %w[CH NO US].include?(@destination_country)
   end
 
   # Certains pays, comme l'Allemagne, requiert une signature pour la livraison

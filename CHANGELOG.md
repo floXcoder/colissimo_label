@@ -1,3 +1,7 @@
+## 0.13.0
+
+- Multiple improvements
+
 ## 0.12.0
 
 - Add Austria to mandatory signature countries
