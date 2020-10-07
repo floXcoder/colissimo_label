@@ -1,3 +1,7 @@
+## 0.17.0
+
+- Add Sweden to mandatory signature countries
+
 ## 0.16.0
 
 - Use correct default value for insurance
