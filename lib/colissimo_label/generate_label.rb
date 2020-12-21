@@ -165,7 +165,7 @@ class ColissimoLabel::GenerateLabel
       "city": @addressee_data[:city], # Ville
       "zipCode": @addressee_data[:postcode], # Code postal
       "phoneNumber": @addressee_data[:phone], # Numéro de téléphone
-      "mobileNumber": @addressee_data[:mobile], # Numéro de portable, obligatoire si pickup
+      "mobileNumber": @addressee_data[:mobile] || @addressee_data[:phone], # Numéro de portable, obligatoire si pickup
       "doorCode1": @addressee_data[:door_code_1], # Code porte 1
       "doorCode2": @addressee_data[:door_code_2], # Code porte 2
       "email": @addressee_data[:email], # Adresse courriel
