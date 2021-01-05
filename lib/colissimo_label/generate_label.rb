@@ -17,6 +17,7 @@ class ColissimoLabel::GenerateLabel
     @customs_data         = options.fetch(:customs_data, nil)
     @with_signature       = options.fetch(:with_signature, false)
     @insurance_value      = options.fetch(:insurance_value, nil)
+    @eori_number          = options.fetch(:eori_number, nil)
     @label_output_format  = options.fetch(:label_output_format, 'PDF_10x15_300dpi')
     @errors               = []
   end
@@ -98,8 +99,9 @@ class ColissimoLabel::GenerateLabel
                                           "addressee": {
                                             "address": format_addressee
                                           }
-                                        }.merge(customs)
-                    }.compact)
+                                        }.merge(customs_letter)
+                    }.merge(customs_fields)
+                     .compact)
   end
 
   # Services =>
@@ -168,7 +170,7 @@ class ColissimoLabel::GenerateLabel
   end
 
   # Déclaration douanière de type CN23
-  def customs
+  def customs_letter
     if require_customs?
       {
         "customsDeclarations": {
@@ -203,8 +205,25 @@ class ColissimoLabel::GenerateLabel
     end
   end
 
+  def customs_fields
+    if require_customs?
+      {
+        "fields": {
+          "customField": [
+                           {
+                             "key":   'EORI',
+                             "value": @eori_number
+                           }
+                         ]
+        }
+      }
+    else
+      {}
+    end
+  end
+
   def require_customs?
-    %w[CH NO US].include?(@destination_country)
+    %w[CH NO US GB].include?(@destination_country)
   end
 
   # Certains pays, comme l'Allemagne, requiert une signature pour la livraison

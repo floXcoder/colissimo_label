@@ -1,3 +1,7 @@
+## 0.18.0
+
+- Add new fields for UK after Brexit
+
 ## 0.17.0
 
 - Add Sweden to mandatory signature countries
