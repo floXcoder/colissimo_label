@@ -148,7 +148,8 @@ class ColissimoLabel::GenerateLabel
       "line2":       @sender_data[:address],
       "city":        @sender_data[:city],
       "zipCode":     @sender_data[:postcode],
-      "countryCode": @sender_data[:country_code]
+      "countryCode": @sender_data[:country_code],
+      "phoneNumber": @sender_data[:phone].presence || @sender_data[:mobile], # Numéro de téléphone
     }
   end
 
@@ -164,8 +165,8 @@ class ColissimoLabel::GenerateLabel
       "countryCode": @addressee_data[:country_code], # Code ISO du pays
       "city": @addressee_data[:city], # Ville
       "zipCode": @addressee_data[:postcode], # Code postal
-      "phoneNumber": @addressee_data[:phone], # Numéro de téléphone
-      "mobileNumber": @addressee_data[:mobile] || @addressee_data[:phone], # Numéro de portable, obligatoire si pickup
+      "phoneNumber": @addressee_data[:phone].presence || @addressee_data[:mobile], # Numéro de téléphone
+      "mobileNumber": @addressee_data[:mobile], # Numéro de portable, obligatoire si pickup (n'accepte pas autre que 06/07)
       "doorCode1": @addressee_data[:door_code_1], # Code porte 1
       "doorCode2": @addressee_data[:door_code_2], # Code porte 2
       "email": @addressee_data[:email], # Adresse courriel
