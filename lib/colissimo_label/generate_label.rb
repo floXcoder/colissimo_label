@@ -14,6 +14,7 @@ class ColissimoLabel::GenerateLabel
     @pickup_type          = options.fetch(:pickup_type, nil)
     @total_weight         = options.fetch(:total_weight, nil)
     @customs_total_weight = options.fetch(:customs_total_weight, nil)
+    @customs_tva_number   = options.fetch(:customs_tva_number, nil)
     @customs_data         = options.fetch(:customs_data, nil)
     @with_signature       = options.fetch(:with_signature, false)
     @insurance_value      = options.fetch(:insurance_value, nil)
@@ -172,7 +173,8 @@ class ColissimoLabel::GenerateLabel
     if require_customs?
       {
         "customsDeclarations": {
-          "includeCustomsDeclarations": 1, # Inclure déclaration
+          "includeCustomsDeclarations": 1, # Inclure déclaration,
+          "importersReference": @customs_tva_number, # Numéro TVA pour la douane, si besoin
           "contents": {
             "article":  @customs_data.map { |customs|
               {

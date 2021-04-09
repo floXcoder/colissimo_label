@@ -1,3 +1,7 @@
+## 0.18.0
+
+- Add new option field: specific TVA number for customs 
+
 ## 0.17.0
 
 - Add Sweden to mandatory signature countries
