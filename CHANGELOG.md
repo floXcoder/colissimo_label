@@ -1,6 +1,10 @@
-## 0.18.0
+## 0.19.0
 
 - Add new option field: specific TVA number for customs 
+
+## 0.18.0
+
+- Add new fields for UK after Brexit
 
 ## 0.17.0
 
