@@ -111,7 +111,8 @@ class ColissimoLabel::GenerateLabel
                                             "productCode":    @product_code,
                                             "depositDate":    delivery_date.strftime('%F'),
                                             "totalAmount":    (@shipping_fees * 100).to_i,
-                                            "returnTypeChoice": '2' # Retour à la maison en prioritaire
+                                            "returnTypeChoice": '2', # Retour à la maison en prioritaire
+                                            "orderNumber": @order_id
                                           },
                                           "parcel":    {
                                                          "weight":           @weight,
@@ -122,6 +123,7 @@ class ColissimoLabel::GenerateLabel
                                             "address": format_sender
                                           },
                                           "addressee": {
+                                            "addresseeParcelRef": @order_id,
                                             "address": format_addressee
                                           }
                                         }.merge(cn23_declaration)
