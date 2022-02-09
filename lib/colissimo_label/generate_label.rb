@@ -120,10 +120,10 @@ class ColissimoLabel::GenerateLabel
                                                          "insuranceValue":   @insurance_value
                                                        }.compact,
                                           "sender":    {
+                                            "senderParcelRef": @order_id,
                                             "address": format_sender
                                           },
                                           "addressee": {
-                                            "addresseeParcelRef": @order_id,
                                             "address": format_addressee
                                           }
                                         }.merge(cn23_declaration)
