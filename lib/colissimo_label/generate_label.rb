@@ -72,6 +72,10 @@ class ColissimoLabel::GenerateLabel
     end
   end
 
+  def payload
+    generate_payload
+  end
+
   private
 
   def file_format
@@ -96,38 +100,41 @@ class ColissimoLabel::GenerateLabel
   end
 
   def perform_request(delivery_date = Date.today)
-    HTTP.post(service_url,
-              json: {
-                      "contractNumber": ColissimoLabel.contract_number,
-                      "password":       ColissimoLabel.contract_password,
-                      "outputFormat":   {
-                        "x":                  '0',
-                        "y":                  '0',
-                        "outputPrintingType": @outputPrintingType
-                      },
-                      "letter":         {
-                                          "service":   {
-                                            "commercialName": @sender_data[:company_name],
-                                            "productCode":    @product_code,
-                                            "depositDate":    delivery_date.strftime('%F'),
-                                            "totalAmount":    (@shipping_fees * 100).to_i,
-                                            "returnTypeChoice": '2', # Retour à la maison en prioritaire
-                                            "orderNumber": @order_id
-                                          },
-                                          "parcel":    {
-                                                         "weight":           @weight,
-                                                         "pickupLocationId": @pickup_id,
-                                                         "insuranceValue":   @insurance_value
-                                                       }.compact,
-                                          "sender":    {
-                                            "senderParcelRef": @order_id,
-                                            "address": format_sender
-                                          },
-                                          "addressee": {
-                                            "address": format_addressee
-                                          }
-                                        }.merge(cn23_declaration)
-                    }.compact)
+    HTTP.post(service_url, json: generate_payload(delivery_date))
+  end
+
+  def generate_payload(delivery_date = Date.today)
+    {
+      "contractNumber": ColissimoLabel.contract_number,
+      "password":       ColissimoLabel.contract_password,
+      "outputFormat":   {
+        "x":                  '0',
+        "y":                  '0',
+        "outputPrintingType": @outputPrintingType
+      },
+      "letter":         {
+                          "service":   {
+                            "commercialName": @sender_data[:company_name],
+                            "productCode":    @product_code,
+                            "depositDate":    delivery_date.strftime('%F'),
+                            "totalAmount":    (@shipping_fees * 100).to_i,
+                            "returnTypeChoice": '2', # Retour à la maison en prioritaire
+                            "orderNumber": @order_id
+                          },
+                          "parcel":    {
+                                         "weight":           @weight,
+                                         "pickupLocationId": @pickup_id,
+                                         "insuranceValue":   @insurance_value
+                                       }.compact,
+                          "sender":    {
+                            "senderParcelRef": @order_id,
+                            "address": format_sender
+                          },
+                          "addressee": {
+                            "address": format_addressee
+                          }
+                        }.merge(cn23_declaration)
+    }.compact
   end
 
   # Services =>
@@ -190,7 +197,7 @@ class ColissimoLabel::GenerateLabel
   def hs_code(product)
     return {} if product[:hs_code].blank?
     {
-      "hsCode": product[:hs_code].to_i
+      "hsCode": product[:hs_code]
     }
   end
 
