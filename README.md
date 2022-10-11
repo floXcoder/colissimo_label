@@ -216,7 +216,7 @@ In both cases, if the label cannot be generated it raises a StandardError with t
 
 Colissimo documentation can be found here:
 
-https://www.colissimo.entreprise.laposte.fr/system/files/imagescontent/docs/spec_ws_affranchissement.pdf
+https://www.colissimo.entreprise.laposte.fr/sites/default/files/2021-03/spec_ws_affranchissement.pdf
 
 ## Contributing
 
