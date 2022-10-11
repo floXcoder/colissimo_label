@@ -48,12 +48,13 @@ class ColissimoLabel::GenerateLabel
     customs_path   = nil
 
     if ColissimoLabel.s3_bucket
-      label_path    = ColissimoLabel.s3_path.chomp('/') + '/' + (@label_path.present? ? @label_path + '/' : '') + label_filename
-      colissimo_pdf = ColissimoLabel.s3_bucket.object(label_path)
+      label_path    = ColissimoLabel.s3_path.chomp('/') + '/' + (@label_path.present? ? @label_path + '/' : '')
+      colissimo_pdf = ColissimoLabel.s3_bucket.object(label_path + label_filename)
       colissimo_pdf.put(acl: 'public-read', body: parts[2])
     else
-      label_path = ColissimoLabel.colissimo_local_path.chomp('/') + '/' + (@label_path.present? ? @label_path + '/' : '') + label_filename
-      File.open(label_path, 'wb') do |file|
+      label_path = ColissimoLabel.colissimo_local_path.chomp('/') + '/' + (@label_path.present? ? @label_path + '/' : '')
+      FileUtils.mkdir_p(label_path) unless File.directory?(label_path)
+      File.open(label_path + label_filename, 'wb') do |file|
         file.write(parts[2])
       end
     end
@@ -62,12 +63,13 @@ class ColissimoLabel::GenerateLabel
       customs_filename = @filename + '-' + @customs_filename + '.pdf'
 
       if ColissimoLabel.s3_bucket
-        customs_path = ColissimoLabel.s3_path.chomp('/') + '/' + (@customs_path.present? ? @customs_path + '/' : '') + customs_filename
-        customs_pdf  = ColissimoLabel.s3_bucket.object(customs_path)
+        customs_path = ColissimoLabel.s3_path.chomp('/') + '/' + (@customs_path.present? ? @customs_path + '/' : '')
+        customs_pdf  = ColissimoLabel.s3_bucket.object(customs_path + customs_filename)
         customs_pdf.put(acl: 'public-read', body: parts[3])
       else
-        customs_path = ColissimoLabel.colissimo_local_path.chomp('/') + '/' + (@customs_path.present? ? @customs_path + '/' : '') + customs_filename
-        File.open(customs_path, 'wb') do |file|
+        customs_path = ColissimoLabel.colissimo_local_path.chomp('/') + '/' + (@customs_path.present? ? @customs_path + '/' : '')
+        FileUtils.mkdir_p(customs_path) unless File.directory?(customs_path)
+        File.open(customs_path + customs_filename, 'wb') do |file|
           file.write(parts[3])
         end
       end

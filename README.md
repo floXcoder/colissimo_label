@@ -144,6 +144,12 @@ You can add the following option to require the signature:
 with_signature: true
 ```
 
+To provide the insurance value (by default, it depends of the weight of the package), add this parameter:
+
+```
+insurance_value: 100
+```
+
 For a national address and delivered to a relay point:
 
 ```ruby
@@ -201,7 +207,8 @@ parcel_number = ColissimoLabel::GenerateLabel.new(
           mobile:       'Mobile number of the addressee',
           email:        'Email of the addressee'
         },
-        customs_total_weight: 2, # Total weight of the package
+        customs_total_weight: 2, # Total weight of the package, required for customs
+        customs_category: 3, # Type of business (commercial by default)
         customs_data: [ # Details content of your package
           {
             description:   'Product description',
@@ -210,7 +217,7 @@ parcel_number = ColissimoLabel::GenerateLabel.new(
             item_price:    100,
             country_code:  'FR',
             currency_code: 'EUR',
-            customs_code:  'hsCode' # Harmonized system code of your product
+            customs_code:  'hsCode' # Harmonized system code of your product, it's a number or a string (starting with '0')
           }
         ]
       ).perform
