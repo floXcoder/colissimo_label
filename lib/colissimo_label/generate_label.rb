@@ -3,24 +3,40 @@
 require 'http'
 
 class ColissimoLabel::GenerateLabel
+  class ServiceUnavailable < StandardError; end
 
   def initialize(filename, destination_country, shipping_fees, sender_data, addressee_data, options = {})
-    @filename             = filename
-    @destination_country  = destination_country
-    @shipping_fees        = shipping_fees
-    @sender_data          = sender_data
-    @addressee_data       = addressee_data
-    @pickup_id            = options.fetch(:pickup_id, nil)
-    @pickup_type          = options.fetch(:pickup_type, nil)
-    @total_weight         = options.fetch(:total_weight, nil)
-    @customs_total_weight = options.fetch(:customs_total_weight, nil)
-    @customs_tva_number   = options.fetch(:customs_tva_number, nil)
+    @filename            = filename
+    @destination_country = destination_country
+    @shipping_fees       = shipping_fees
+
+    @sender_data    = sender_data
+    @addressee_data = addressee_data
+
+    @pickup_id           = options.fetch(:pickup_id, nil)
+    @pickup_type         = options.fetch(:pickup_type, nil)
+    @total_weight        = options.fetch(:total_weight, nil)
+    @product_code        = options.fetch(:product_code, nil)
+    @with_signature      = options.fetch(:with_signature, false)
+    @insurance_value     = options.fetch(:insurance_value, nil)
+    @label_output_format = options.fetch(:label_output_format, 'PDF_10x15_300dpi')
+    @label_path          = options.fetch(:label_path, nil)
+
     @customs_data         = options.fetch(:customs_data, nil)
-    @with_signature       = options.fetch(:with_signature, false)
-    @insurance_value      = options.fetch(:insurance_value, nil)
+    @customs_total_weight = options.fetch(:customs_total_weight, nil)
+    @customs_category     = options.fetch(:customs_category, 3)
+    @customs_tva_number   = options.fetch(:customs_tva_number, nil)
     @eori_number          = options.fetch(:eori_number, nil)
-    @label_output_format  = options.fetch(:label_output_format, 'PDF_10x15_300dpi')
-    @errors               = []
+    @customs_path         = options.fetch(:customs_path, nil)
+    @customs_filename     = options.fetch(:customs_filename, 'customs')
+
+    @order_id         = options.fetch(:order_id, nil)
+    @sender_data      = sender_data
+    @sender_ref_id    = options.fetch(:sender_ref_id, nil)
+    @addressee_data   = addressee_data
+    @addressee_ref_id = options.fetch(:addressee_ref_id, nil)
+
+    @errors = []
   end
 
   def perform
@@ -28,25 +44,30 @@ class ColissimoLabel::GenerateLabel
     status         = response.code
     parts          = response.to_a.last.force_encoding('BINARY').split('Content-ID: ')
     label_filename = @filename + '.' + file_format
-    local_path     = ColissimoLabel.colissimo_local_path&.chomp('/')
+    label_path     = nil
+    customs_path   = nil
 
     if ColissimoLabel.s3_bucket
-      colissimo_pdf = ColissimoLabel.s3_bucket.object(ColissimoLabel.s3_path.chomp('/') + '/' + label_filename)
+      label_path    = ColissimoLabel.s3_path.chomp('/') + '/' + (@label_path.present? ? @label_path + '/' : '') + label_filename
+      colissimo_pdf = ColissimoLabel.s3_bucket.object(label_path)
       colissimo_pdf.put(acl: 'public-read', body: parts[2])
     else
-      File.open(local_path + '/' + label_filename, 'wb') do |file|
+      label_path = ColissimoLabel.colissimo_local_path.chomp('/') + '/' + (@label_path.present? ? @label_path + '/' : '') + label_filename
+      File.open(label_path, 'wb') do |file|
         file.write(parts[2])
       end
     end
 
     if require_customs?
-      customs_filename = @filename + '-customs.pdf'
+      customs_filename = @filename + '-' + @customs_filename + '.pdf'
 
       if ColissimoLabel.s3_bucket
-        customs_pdf = ColissimoLabel.s3_bucket.object(ColissimoLabel.s3_path.chomp('/') + '/' + customs_filename)
+        customs_path = ColissimoLabel.s3_path.chomp('/') + '/' + (@customs_path.present? ? @customs_path + '/' : '') + customs_filename
+        customs_pdf  = ColissimoLabel.s3_bucket.object(customs_path)
         customs_pdf.put(acl: 'public-read', body: parts[3])
       else
-        File.open(local_path + '/' + customs_filename, 'wb') do |file|
+        customs_path = ColissimoLabel.colissimo_local_path.chomp('/') + '/' + (@customs_path.present? ? @customs_path + '/' : '') + customs_filename
+        File.open(customs_path, 'wb') do |file|
           file.write(parts[3])
         end
       end
@@ -54,55 +75,68 @@ class ColissimoLabel::GenerateLabel
 
     if status == 400 || status == 500
       error_message = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"messageContent":"(.*?)"/).last&.first
-      raise StandardError, error_message
+      raise ServiceUnavailable, error_message
     elsif status == 503
-      raise StandardError, { message: 'Colissimo: Service Unavailable' }
+      raise ServiceUnavailable, { message: 'Colissimo: Service Unavailable', code: 503 }.to_json
     else
       if (response_message = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"parcelNumber":"(.*?)",/).last)
         parcel_number = response_message.first
 
-        return parcel_number
+        if ColissimoLabel.s3_bucket
+          return parcel_number
+        else
+          return [parcel_number, label_path, customs_path]
+        end
       else
         error_message = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"messageContent":"(.*?)"/).last&.first
-        raise StandardError, error_message
+        raise ServiceUnavailable, error_message
       end
     end
+  end
+
+  def payload
+    build_colissimo_payload
   end
 
   private
 
   def perform_request(delivery_date = Date.today)
-    HTTP.post(service_url,
-              json: {
-                      "contractNumber": ColissimoLabel.contract_number,
-                      "password":       ColissimoLabel.contract_password,
-                      "outputFormat":   {
-                        "x":                  '0',
-                        "y":                  '0',
-                        "outputPrintingType": @label_output_format
-                      },
-                      "letter":         {
-                                          "service":   {
-                                            "commercialName": @sender_data[:company_name],
-                                            "productCode":    product_code,
-                                            "depositDate":    delivery_date.strftime('%F'),
-                                            "totalAmount":    (@shipping_fees * 100).to_i,
-                                            # "returnTypeChoice": '2' # Retour à la maison en prioritaire
-                                          },
-                                          "parcel":    {
-                                                         "weight":           format_weight,
-                                                         "pickupLocationId": @pickup_id,
-                                                         "insuranceValue":   @insurance_value
-                                                       }.compact,
-                                          "sender":    {
-                                            "address": format_sender
-                                          },
-                                          "addressee": {
-                                            "address": format_addressee
-                                          }
-                                        }.merge(customs_letter)
-                    }.merge(customs_fields)
-                     .compact)
+    HTTP.post(service_url, json: build_colissimo_payload(delivery_date))
+  end
+
+  def build_colissimo_payload(delivery_date = Date.today)
+    {
+      "contractNumber": ColissimoLabel.contract_number,
+      "password":       ColissimoLabel.contract_password,
+      "outputFormat":   {
+        "x":                  '0',
+        "y":                  '0',
+        "outputPrintingType": @label_output_format
+      },
+      "letter":         {
+                          "service":   {
+                            "commercialName":   @sender_data[:company_name],
+                            "productCode":      @product_code.presence || product_code,
+                            "depositDate":      delivery_date.strftime('%F'),
+                            "totalAmount":      (@shipping_fees * 100).to_i,
+                            "returnTypeChoice": '2', # Retour à la maison en prioritaire
+                            "orderNumber": @order_id
+                          },
+                          "parcel":    {
+                                         "weight":           @weight,
+                                         "pickupLocationId": @pickup_id,
+                                         "insuranceValue":   @insurance_value
+                                       }.compact,
+                          "sender":    {
+                                         "senderParcelRef": @sender_ref_id,
+                                         "address":         format_sender
+                                       }.compact,
+                          "addressee": {
+                                         "addresseeParcelRef": @addressee_ref_id,
+                                         "address":            format_addressee
+                                       }.compact
+                        }.merge(customs_declaration)
+    }.merge(customs_fields).compact
   end
 
   # Services =>
@@ -133,10 +167,13 @@ class ColissimoLabel::GenerateLabel
       "companyName": @sender_data[:company_name],
       "lastName":    @sender_data[:last_name],
       "firstName":   @sender_data[:first_name],
+      "line0":       @sender_data[:apartment],
+      "line1":       @sender_data[:address_bis],
       "line2":       @sender_data[:address],
       "city":        @sender_data[:city],
       "zipCode":     @sender_data[:postcode],
-      "countryCode": @sender_data[:country_code]
+      "countryCode": @sender_data[:country_code],
+      "phoneNumber": @sender_data[:phone].presence || @sender_data[:mobile]
     }.compact.transform_values(&:strip)
   end
 
@@ -152,7 +189,7 @@ class ColissimoLabel::GenerateLabel
       "countryCode": @addressee_data[:country_code], # Code ISO du pays
       "city": @addressee_data[:city], # Ville
       "zipCode": @addressee_data[:postcode], # Code postal
-      "phoneNumber": @addressee_data[:phone], # Numéro de téléphone
+      "phoneNumber": @addressee_data[:phone].presence || @addressee_data[:mobile], # Numéro de téléphone
       "mobileNumber": @addressee_data[:mobile], # Numéro de portable, obligatoire si pickup
       "doorCode1": @addressee_data[:door_code_1], # Code porte 1
       "doorCode2": @addressee_data[:door_code_2], # Code porte 2
@@ -166,41 +203,42 @@ class ColissimoLabel::GenerateLabel
     if require_customs?
       @customs_total_weight
     else
-      @total_weight ? @total_weight : '0.1'
+      @total_weight.presence || '0.1'
     end
   end
 
   # Déclaration douanière de type CN23
-  def customs_letter
+  def customs_declaration
     if require_customs?
       {
-        "customsDeclarations": {
-          "includeCustomsDeclarations": 1, # Inclure déclaration,
-          "importersReference": @customs_tva_number, # Numéro TVA pour la douane, si besoin
-          "contents": {
-            "article":  @customs_data.map { |customs|
-              {
-                "description":   customs[:description],
-                "quantity":      customs[:quantity]&.to_i,
-                "weight":        customs[:weight]&.to_f.round(2),
-                "value":         customs[:item_price]&.to_f.round(2),
-                "originCountry": customs[:country_code],
-                "currency":      customs[:currency_code],
-                "hsCode":        customs[:customs_code] # Objets d'art, de collection ou d'antiquité (https://pro.douane.gouv.fr/prodouane.asp)
+        "customsDeclarations":
+          {
+            "includeCustomsDeclarations": 1, # Inclure déclaration
+            "importersReference": @customs_tva_number, # Numéro TVA pour la douane, si besoin
+            "contents": {
+              "article":  @customs_data.map { |product_customs|
+                {
+                  "description":   product_customs[:description],
+                  "quantity":      product_customs[:quantity]&.to_i,
+                  "weight":        product_customs[:weight]&.to_f.round(2),
+                  "value":         product_customs[:item_price]&.to_f.round(2),
+                  "originCountry": product_customs[:country_code],
+                  "currency":      product_customs[:currency_code],
+                  "hsCode":        product_customs[:customs_code].presence
+                }.compact
+              },
+              "category": {
+                # Nature de l'envoi
+                # 1 => Cadeau
+                # 2 => Echantillon commercial
+                # 3 => Envoi commercial
+                # 4 => Document
+                # 5 => Autre
+                # 6 => Retour de marchandise
+                "value": @customs_category
               }
-            },
-            "category": {
-              # Nature de l'envoi
-              # 1 => Cadeau
-              # 2 => Echantillon commercial
-              # 3 => Envoi commercial
-              # 4 => Document
-              # 5 => Autre
-              # 6 => Retour de marchandise
-              "value": 3
             }
-          }
-        }
+          }.compact
       }
     else
       {}
@@ -208,7 +246,7 @@ class ColissimoLabel::GenerateLabel
   end
 
   def customs_fields
-    if require_customs?
+    if require_customs? && @eori_number.present?
       {
         "fields": {
           "customField": [
@@ -225,7 +263,7 @@ class ColissimoLabel::GenerateLabel
   end
 
   def require_customs?
-    %w[CH NO US GB].include?(@destination_country)
+    @customs_data.present? || %w[CH NO US GB].include?(@destination_country)
   end
 
   # Certains pays, comme l'Allemagne, requiert une signature pour la livraison
