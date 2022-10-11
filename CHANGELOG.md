@@ -1,3 +1,10 @@
+## 0.20.0
+
+- Automatically create the path for label and customs documents
+- Add more parameter options for customs
+- Add parameters for specific addressee and sender reference
+- Update dependencies
+
 ## 0.19.0
 
 - Add new option field: specific TVA number for customs 
