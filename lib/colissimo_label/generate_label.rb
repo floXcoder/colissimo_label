@@ -216,9 +216,9 @@ class ColissimoLabel::GenerateLabel
             "article":  @cn23_data["products"].map { |product|
               {
                 "description":   product[:description],
-                "quantity":      product[:quantity].to_i,
-                "weight":        product[:weight].to_f.round(2),
-                "value":         product[:unit_price].to_f.round(2),
+                "quantity":      product[:quantity]&.to_i,
+                "weight":        product[:weight]&.to_f&.round(2),
+                "value":         product[:item_price]&.to_f&.round(2),
                 "originCountry": product[:country_code],
                 "currency":      product[:currency_code]
               }.merge(hs_code(product))
