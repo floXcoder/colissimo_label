@@ -4,6 +4,7 @@ require 'http'
 
 class ColissimoLabel::GenerateLabel
   class ServiceUnavailable < StandardError; end
+
   require 'pathname'
 
   def initialize(filename, destination_country, shipping_fees, sender_data, addressee_data, options = {})
@@ -16,7 +17,9 @@ class ColissimoLabel::GenerateLabel
     @insurance_value      = options.fetch(:insurance_value, nil) || "0"
     @order_id             = options.fetch(:order_id, nil)
     @sender_data          = sender_data
+    @sender_ref_id        = options.fetch(:sender_ref_id, nil)
     @addressee_data       = addressee_data
+    @addressee_ref_id     = options.fetch(:addressee_ref_id, nil)
     @pickup_id            = options.fetch(:pickup_id, nil)
     @pickup_type          = options.fetch(:pickup_type, nil)
     @customs_total_weight = options.fetch(:customs_total_weight, nil)
@@ -29,9 +32,9 @@ class ColissimoLabel::GenerateLabel
     status         = response.code
     parts          = response.to_a.last.force_encoding('BINARY').split('Content-ID: ')
     label_filename = @filename + '.' + file_format
-    local_path = ColissimoLabel.colissimo_local_path.chomp('/') + '/'
-    label_path = local_path + 'labels/' + label_filename
-    cn23_path = nil
+    local_path     = ColissimoLabel.colissimo_local_path.chomp('/') + '/'
+    label_path     = local_path + 'labels/' + label_filename
+    cn23_path      = nil
 
     if ColissimoLabel.s3_bucket
       colissimo_pdf = ColissimoLabel.s3_bucket.object(ColissimoLabel.s3_path.chomp('/') + '/' + label_filename)
@@ -46,7 +49,7 @@ class ColissimoLabel::GenerateLabel
 
     if require_customs?
       cn23_filename = @filename + '_cn23.pdf'
-      cn23_path = local_path + 'cn23/' + cn23_filename
+      cn23_path     = local_path + 'cn23/' + cn23_filename
 
       if ColissimoLabel.s3_bucket
         customs_pdf = ColissimoLabel.s3_bucket.object(ColissimoLabel.s3_path.chomp('/') + '/' + customs_filename)
@@ -64,7 +67,7 @@ class ColissimoLabel::GenerateLabel
       error_message = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"messageContent":"(.*?)"/).last.first
       raise StandardError, error_message
     elsif status == 503
-      raise ServiceUnavailable, { message: 'Laposte: Service Unavailable', code: 503}.to_json
+      raise ServiceUnavailable, { message: 'Laposte: Service Unavailable', code: 503 }.to_json
     else
       parcel_number = response.body.to_s.encode('UTF-8', 'binary', invalid: :replace, undef: :replace, replace: '').scan(/"parcelNumber":"(.*?)",/).last.first
 
@@ -73,7 +76,7 @@ class ColissimoLabel::GenerateLabel
   end
 
   def payload
-    generate_payload
+    build_colissimo_payload
   end
 
   private
@@ -87,23 +90,23 @@ class ColissimoLabel::GenerateLabel
   def getProductInter
     url = "https://ws.colissimo.fr/sls-ws/SlsServiceWSRest/2.0/getProductInter"
     HTTP.post(url,
-      {
-        json: {
-          "contractNumber": ColissimoLabel.contract_number,
-          "password": ColissimoLabel.contract_password,
-          productCode: 'COLI',
-          countryCode: 'US',
-          zipCode: '99501'
-        }
-      }
+              {
+                json: {
+                  "contractNumber": ColissimoLabel.contract_number,
+                  "password":       ColissimoLabel.contract_password,
+                  productCode:      'COLI',
+                  countryCode:      'US',
+                  zipCode:          '99501'
+                }
+              }
     )
   end
 
   def perform_request(delivery_date = Date.today)
-    HTTP.post(service_url, json: generate_payload(delivery_date))
+    HTTP.post(service_url, json: build_colissimo_payload(delivery_date))
   end
 
-  def generate_payload(delivery_date = Date.today)
+  def build_colissimo_payload(delivery_date = Date.today)
     {
       "contractNumber": ColissimoLabel.contract_number,
       "password":       ColissimoLabel.contract_password,
@@ -114,10 +117,10 @@ class ColissimoLabel::GenerateLabel
       },
       "letter":         {
                           "service":   {
-                            "commercialName": @sender_data[:company_name],
-                            "productCode":    @product_code,
-                            "depositDate":    delivery_date.strftime('%F'),
-                            "totalAmount":    (@shipping_fees * 100).to_i,
+                            "commercialName":   @sender_data[:company_name],
+                            "productCode":      @product_code,
+                            "depositDate":      delivery_date.strftime('%F'),
+                            "totalAmount":      (@shipping_fees * 100).to_i,
                             "returnTypeChoice": '2', # Retour à la maison en prioritaire
                             "orderNumber": @order_id
                           },
@@ -127,12 +130,13 @@ class ColissimoLabel::GenerateLabel
                                          "insuranceValue":   @insurance_value
                                        }.compact,
                           "sender":    {
-                            "senderParcelRef": @order_id,
-                            "address": format_sender
-                          },
+                                         "senderParcelRef": @sender_ref_id,
+                                         "address":         format_sender
+                                       }.compact,
                           "addressee": {
-                            "address": format_addressee
-                          }
+                                         "addresseeParcelRef": @addressee_ref_id,
+                                         "address":            format_addressee
+                                       }.compact
                         }.merge(cn23_declaration)
     }.compact
   end
@@ -193,9 +197,10 @@ class ColissimoLabel::GenerateLabel
     # end
   end
 
-  # Objets d'art, de collection ou d'antiquité (https://pro.douane.gouv.fr/prodouane.asp)
+  # Code du type de marchandise à déclarer pour la douane (https://www.douane.gouv.fr/demarche/connaitre-la-nomenclature-de-votre-marchandise)
   def hs_code(product)
     return {} if product[:hs_code].blank?
+
     {
       "hsCode": product[:hs_code]
     }
